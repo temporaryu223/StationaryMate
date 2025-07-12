@@ -310,15 +310,43 @@ const PrintingServiceHomepage = () => {
     setBillAmount(0);
   };
 
-  const handleBuyNow = () => {
-    setBillModalOpen(false);
-    alert(`Processing payment of $${formatPrice(billAmount)}...`);
-    // Reset after purchase
-    setSelectedService(null);
-    setPdfFile(null);
-    setPageCount(0);
-    setBillAmount(0);
+  const handleBuyNow = async () => {
+  setBillModalOpen(false);
+  alert(`Processing payment of hello balu $${formatPrice(billAmount)}...`);
+
+  // Prepare the data to send
+  const data = {
+    amount: billAmount,
+    service: selectedService,
+    pageCount: pageCount,
   };
+
+  try {
+    const response = await fetch('http://localhost:3000/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    console.log('Server response:', result);
+
+    // Optional: show success message to user
+    alert('Payment processed successfully!');
+  } catch (error) {
+    console.error('Error sending data to server:', error);
+    alert('Error processing payment. Please try again.');
+  }
+
+  // Reset after purchase
+  setSelectedService(null);
+  setPdfFile(null);
+  setPageCount(0);
+  setBillAmount(0);
+};
+
 
   const handleBasketClick = () => {
     setBasketModalOpen(true);

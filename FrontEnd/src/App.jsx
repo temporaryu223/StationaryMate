@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+// import { FileTextIcon, PaletteIcon, CheckIcon } from 'lucide-react'; // or your icon library
+// import * as pdfjsLib from 'pdfjs-dist';
+// import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
-import nitaplogo from "./assets/img/logo.png";
+// pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-import AdminDashboard from "./AdminDashboard"
+import nitaplogo from './assets/img/logo.png';
 
+import AdminDashboard from './AdminDashboard';
+// import { keys } from '../../BackEnd/controllers/ordersControllers';
+const colorCost = 5;
+const sendUrl = 'http://localhost:3000';
 const SearchIcon = () => (
   <svg
     className="w-5 h-5"
@@ -52,7 +59,7 @@ const BellIcon = () => (
   </svg>
 );
 
-const FileTextIcon = ({ className = "w-6 h-6" }) => (
+const FileTextIcon = ({ className = 'w-6 h-6' }) => (
   <svg
     className={className}
     fill="none"
@@ -68,7 +75,7 @@ const FileTextIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-const PaletteIcon = ({ className = "w-8 h-8" }) => (
+const PaletteIcon = ({ className = 'w-8 h-8' }) => (
   <svg
     className={className}
     fill="none"
@@ -84,7 +91,7 @@ const PaletteIcon = ({ className = "w-8 h-8" }) => (
   </svg>
 );
 
-const BookOpenIcon = ({ className = "w-8 h-8" }) => (
+const BookOpenIcon = ({ className = 'w-8 h-8' }) => (
   <svg
     className={className}
     fill="none"
@@ -100,7 +107,7 @@ const BookOpenIcon = ({ className = "w-8 h-8" }) => (
   </svg>
 );
 
-const BarChart3Icon = ({ className = "w-8 h-8" }) => (
+const BarChart3Icon = ({ className = 'w-8 h-8' }) => (
   <svg
     className={className}
     fill="none"
@@ -212,10 +219,25 @@ const ArrowLeftIcon = () => (
   </svg>
 );
 
-
+const iconMap = {
+  SearchIcon: SearchIcon,
+  ShoppingCartIcon: ShoppingCartIcon,
+  BellIcon: BellIcon,
+  BookOpenIcon: BookOpenIcon,
+  BarChart3Icon: BarChart3Icon,
+  UserIcon: UserIcon,
+  FileTextIcon: FileTextIcon,
+  PaletteIcon: PaletteIcon,
+  MenuIcon: MenuIcon,
+  CloseIcon: CloseIcon,
+  UploadIcon: UploadIcon,
+  CheckIcon: CheckIcon,
+  ArrowLeftIcon: ArrowLeftIcon,
+  // add more as needed
+};
 
 // Enhanced Modal component
-const Modal = ({ isOpen, onClose, title, children, size = "max-w-lg" }) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'max-w-lg' }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -318,105 +340,127 @@ const BillModal = ({
 };
 
 const PrintingServiceHomepage = () => {
-  const [currentPage, setCurrentPage] = useState("home"); // 'home' or 'services'
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' or 'services'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [pageCount, setPageCount] = useState(0);
+  const [copies, setCopies] = useState(1);
   const [billAmount, setBillAmount] = useState(0);
   const [cartItems, setCartItems] = useState([]);
   const [basketModalOpen, setBasketModalOpen] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const [myOrdersModalOpen, setMyOrdersModalOpen] = useState(false);
+  const [myAccountModalOpen, setMyAccountModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-
-  //Admin Mode
+  const formRef = useRef(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
+  const [paperSize, setPaperSize] = useState('A4');
+  const [orientation, setOrientation] = useState('portrait');
+  const [authToken, setAuthToken] = useState('');
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setAuthToken(token);
+    }
+  }, []);
+
   const [orders, setOrders] = useState([
     // Sample data - replace with real data from backend
     {
       id: 1,
-      customerName: "John Doe",
-      email: "john@nitap.ac.in",
-      phone: "+91 9876543210",
-      service: "B&W PRINTOUT",
-      fileName: "assignment.pdf",
+      customerName: 'John Doe',
+      email: 'john@nitap.ac.in',
+      phone: '+91 9876543210',
+      service: 'B&W PRINTOUT',
+      fileName: 'assignment.pdf',
       pages: 5,
       copies: 2,
       totalAmount: 20,
-      status: "pending",
+      status: 'pending',
       uploadTime: new Date().toISOString(),
-      pdfUrl: "/uploads/assignment.pdf", // Store PDF path
+      pdfUrl: '/uploads/assignment.pdf', // Store PDF path
     },
   ]);
-  
+  const [myOrders, setMyOrders] = useState([]);
 
+  const fetchOrders = async () => {
+    // if (!user?.email || !authToken) {
+    //   return;
+    // }
+    const response = await fetch(
+      sendUrl + '/api/orders/getallordersbymail/' + user.email,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: authToken,
+        },
+      },
+    );
+    const result = await response.json();
+    if (result.success) {
+      setMyOrders(result.data);
+    } else {
+      setMyOrdersModalOpen(false);
+      alert(result.message);
+    }
+  };
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    // setIsLoading(false);
+  }, []);
 
-  const services = [
-    {
-      title: "B&W PRINTOUT",
-      icon: FileTextIcon,
-      gradient: "from-gray-600 via-gray-700 to-gray-800",
-      description:
-        "High-quality black & white printing for documents, assignments, and reports",
-      pricePerPage: 2,
-      features: [
-        "High resolution 600 DPI",
-        "Premium paper quality",
-        "Fast processing",
-        "Stapling available",
-      ],
-      deliveryTime: "5-10 minutes",
-    },
-    {
-      title: "COLOR PRINTOUT",
-      icon: PaletteIcon,
-      gradient: "from-pink-500 via-red-500 to-orange-500",
-      description:
-        "Vibrant color printing for presentations, posters, and creative projects",
-      pricePerPage: 5,
-      features: [
-        "True color reproduction",
-        "Glossy/Matte options",
-        "Various paper sizes",
-        "Lamination available",
-      ],
-      deliveryTime: "10-15 minutes",
-    },
-    {
-      title: "SPIRAL BINDING",
-      icon: BookOpenIcon,
-      gradient: "from-blue-500 via-indigo-500 to-purple-500",
-      description:
-        "Professional document binding for thesis, reports, and presentations",
-      pricePerPage: 3,
-      features: [
-        "Durable plastic spiral",
-        "Cover page included",
-        "Multiple color options",
-        "Up to 200 pages",
-      ],
-      deliveryTime: "15-20 minutes",
-    },
-    {
-      title: "REPORT PRINTING",
-      icon: BarChart3Icon,
-      gradient: "from-emerald-500 via-teal-500 to-cyan-500",
-      description:
-        "Complete report printing solutions with formatting and binding",
-      pricePerPage: 4,
-      features: [
-        "Professional formatting",
-        "Table of contents",
-        "Page numbering",
-        "Hard/Soft binding",
-      ],
-      deliveryTime: "20-30 minutes",
-    },
-  ];
+  // Fetching Services from Backend
+  const [services, setServices] = useState([]);
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch(sendUrl + '/api/services/get', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          setServices(data.data);
+        } else {
+          console.error('Invalid service data format:', data);
+        }
+      } catch (e) {
+        console.log('Error fetching services:', e);
+
+        // Optional fallback if fetch fails
+        setServices([
+          {
+            title: 'COLOR PRINTOUT',
+            icon: PaletteIcon,
+            gradient: 'from-pink-500 via-red-500 to-orange-500',
+            description:
+              'Vibrant color printing for presentations, posters, and creative projects',
+            pricePerPage: 5,
+            features: [
+              'True color reproduction',
+              'Glossy/Matte options',
+              'Various paper sizes',
+              'Lamination available',
+            ],
+            deliveryTime: '10-15 minutes',
+          },
+        ]);
+      }
+    };
+
+    fetchServices();
+  }, []);
   const formatPrice = (amount) => amount.toFixed(2);
 
   const handleDragOver = (e) => {
@@ -447,23 +491,31 @@ const PrintingServiceHomepage = () => {
 
   const handleFileProcessing = (file) => {
     if (!selectedService) {
-      alert("Please select a service first!");
+      alert('Please select a service first!');
       return;
     }
-    if (file && file.type === "application/pdf") {
+    if (file && file.type === 'application/pdf') {
       setPdfFile(file);
+      console.log(file);
+
       const simulatedPageCount = Math.floor(Math.random() * 10) + 1;
+
       setPageCount(simulatedPageCount);
+
       const selectedServiceDetails = services.find(
-        (service) => service.title === selectedService
+        (service) => service.title === selectedService,
       );
+
       if (selectedServiceDetails) {
-        const bill = simulatedPageCount * selectedServiceDetails.pricePerPage;
+        const price = selectedServiceDetails.color
+          ? colorCost
+          : selectedServiceDetails.pricePerPage;
+        const bill = simulatedPageCount * price;
         setBillAmount(bill);
         setBillModalOpen(true);
       }
     } else {
-      alert("Please upload a valid PDF file.");
+      alert('Please upload a valid PDF file.');
     }
   };
 
@@ -474,40 +526,236 @@ const PrintingServiceHomepage = () => {
     setPdfFile(null);
   };
 
-  const handleAddToBasket = () => {
+  const handleChangeCopies = (copies) => {
+    if (copies < 1) return;
+    setCopies(copies);
+  };
+  const handleSelectedPaper = (paperSize) => {
+    setPaperSize(paperSize);
+  };
+  const handleSelectedOrientation = (paperOrientation) => {
+    setOrientation(paperOrientation);
+  };
+  const handleAddToBasket = async () => {
     const selectedServiceDetails = services.find(
-      (service) => service.title === selectedService
+      (service) => service.title === selectedService,
     );
-    const newItem = {
-      id: Date.now(),
-      service: selectedServiceDetails.title,
-      pages: pageCount,
-      pricePerPage: selectedServiceDetails.pricePerPage,
-      total: billAmount,
-      fileName: pdfFile.name,
-    };
-    setCartItems((prev) => [...prev, newItem]);
+
+    const formData = new FormData();
+    formData.append('pdf', pdfFile);
+    formData.append('user', JSON.stringify(user));
+    formData.append('service', selectedServiceDetails.title);
+    formData.append('amount', billAmount);
+    formData.append('pages', pageCount);
+    formData.append('copies', copies);
+    formData.append('color', color);
+    formData.append('paperSize', paperSize);
+    formData.append('orientation', orientation);
+
+    const response = await fetch(sendUrl + '/api/basket/create', {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert(
+        `Added to basket: ${selectedServiceDetails.title} - ${pageCount} pages`,
+      );
+      // Reset for next order
+
+      setBillModalOpen(false);
+      setSelectedService(null);
+      setPdfFile(null);
+      setPageCount(0);
+      setBillAmount(0);
+    } else {
+      alert(result.message);
+    }
+    // setCartItems((prev) => [...prev, newItem]);
+  };
+  const handleBuyNow = async () => {
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      alert('Failed to load The Razor Pay!!, Are you online');
+      return;
+    }
     setBillModalOpen(false);
-    alert(`Added to basket: ${newItem.service} - ${newItem.pages} pages`);
-    // Reset for next order
-    setSelectedService(null);
-    setPdfFile(null);
-    setPageCount(0);
-    setBillAmount(0);
+
+    const razorpayRes = await fetch(sendUrl + '/api/razorpay/create', {
+      method: 'POST',
+      headers: {
+        Authorization: authToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: billAmount }),
+    });
+
+    const razorpayResult = await razorpayRes.json();
+
+    if (razorpayResult.success) {
+      const options = {
+        key: razorpayResult.key,
+        amount: razorpayResult.amount,
+        name: 'Stationary Mate',
+        description: 'Nil',
+        order_id: razorpayResult.id,
+        handler: async function (res) {
+          if (res) {
+            const formData = new FormData();
+            formData.append('pdf', pdfFile);
+            formData.append('user', JSON.stringify(user));
+            formData.append('service', JSON.stringify(selectedServiceDetails));
+            formData.append('amount', billAmount);
+            formData.append('pages', pageCount);
+            formData.append('copies', copies);
+            formData.append('color', color);
+            formData.append('paperSize', paperSize);
+            formData.append('orientation', orientation);
+
+            try {
+              const response = await fetch(
+                sendUrl + '/api/orders/createOrder',
+                {
+                  method: 'POST',
+                  body: formData,
+                },
+              );
+
+              const result = await response.json();
+              console.log('Server response:', result);
+              if (result.success) {
+                alert('Payment processed successfully!');
+              } else {
+                alert('Payment Failed!');
+              }
+            } catch (error) {
+              console.error('Error sending data to server:', error);
+              alert('Error processing payment. Please try again.');
+            }
+
+            // Reset after purchase
+            setSelectedService(null);
+            setPdfFile(null);
+            setPageCount(0);
+            setBillAmount(0);
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: '+91' + user.mobile,
+        },
+
+        notes: {
+          address: 'Nil',
+        },
+        theme: {
+          color: '#3399cc',
+        },
+      };
+      const rzp1 = new Razorpay(options);
+      rzp1.open();
+    } else {
+      alert(razorpayResult.message);
+    }
   };
 
-  const handleBuyNow = () => {
-    setBillModalOpen(false);
-    alert(`Processing payment of ₹${formatPrice(billAmount)}...`);
-    // Reset after purchase
-    setSelectedService(null);
-    setPdfFile(null);
-    setPageCount(0);
-    setBillAmount(0);
+  const handleCheckout = async () => {
+    const isScriptLoaded = loadRazorpayScript();
+    if (!isScriptLoaded) {
+      alert('Unable To Process Request. Are You online!!');
+      return;
+    }
+    handleBasketClick();
+    var amount = 0;
+    for (const item of cartItems) {
+      amount = amount + item.totalAmount;
+    }
+
+    const razorpayRes = await fetch(sendUrl + '/api/razorpay/create', {
+      method: 'POST',
+      headers: {
+        Authorization: authToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: amount }),
+    });
+    const razorpayResult = await razorpayRes.json();
+    if (razorpayResult.success) {
+      const options = {
+        key: razorpayResult.key,
+        amount: amount,
+        name: 'Stationary Mate',
+        description: 'Nil',
+        order_id: razorpayResult.id,
+        handler: async function (res) {
+          if (res) {
+            const result = await fetch(
+              sendUrl + '/api/basket/checkout/' + user.email,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: authToken,
+                },
+              },
+            );
+            const response = await result.json();
+            if (response.success) {
+              alert(response.message);
+              handleBasketClick();
+            } else {
+              alert(response.message);
+            }
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: '+91' + user.mobile,
+        },
+
+        notes: {
+          address: 'Nil',
+        },
+        theme: {
+          color: '#3399cc',
+        },
+      };
+      const rzp2 = new Razorpay(options);
+      rzp2.open();
+    } else {
+      alert(razorpayResult.message);
+    }
+  };
+  const handleMyAccountClick = () => {
+    if (user) {
+      setMyAccountModalOpen(true);
+    } else {
+      alert('Kindly Login...');
+    }
   };
 
-  const handleBasketClick = () => {
-    setBasketModalOpen(true);
+  const handleBasketClick = async () => {
+    if (user) {
+      const response = await fetch(
+        sendUrl + '/api/basket/getAll/' + user.email,
+        {
+          headers: {
+            Authorization: authToken,
+          },
+        },
+      );
+      const result = await response.json();
+      if (result.success) {
+        setCartItems(result.items);
+
+        setBasketModalOpen(true);
+      } else {
+        alert(result.message);
+      }
+    } else {
+      alert('Kindly Login...');
+    }
   };
 
   const handleSignInClick = () => {
@@ -519,14 +767,46 @@ const PrintingServiceHomepage = () => {
   };
 
   const handleServicesNavClick = () => {
-    setCurrentPage("services");
+    setCurrentPage('services');
   };
 
   const handleBackToHome = () => {
-    setCurrentPage("home");
+    setCurrentPage('home');
   };
 
-  // Services Page Component
+  const selectedServiceDetails = services.find(
+    (service) => service.title === selectedService,
+  );
+
+  const [color, setColor] = useState(selectedServiceDetails?.color);
+
+  useEffect(() => {
+    if (selectedServiceDetails?.color !== undefined && color === undefined) {
+      setColor(selectedServiceDetails.color);
+    }
+  }, [selectedServiceDetails]);
+
+  const handleSelectedColor = (changedColor) => {
+    const isColor = changedColor === 'Color';
+    console.log(isColor);
+
+    setColor(isColor);
+    console.log(
+      'Color changed to:',
+      isColor ? 'Color' : 'Black & White',
+      color,
+    );
+  };
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const ServicesPage = () => (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
@@ -544,7 +824,7 @@ const PrintingServiceHomepage = () => {
         </div>
       </header>
 
-    {/* Services Content */}
+      {/* Services Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="text-center mb-16">
@@ -560,7 +840,7 @@ const PrintingServiceHomepage = () => {
         {/* Service Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {services.map((service, index) => {
-            const IconComponent = service.icon;
+            const IconComponent = iconMap[service.icon] || FileTextIcon;
             return (
               <div
                 key={index}
@@ -627,22 +907,22 @@ const PrintingServiceHomepage = () => {
             {/* Benefit Item */}
             {[
               {
-                title: "Quality Guaranteed",
-                desc: "Professional grade equipment ensuring crisp, clear prints every time",
-                iconColor: "bg-blue-100",
-                iconText: "text-blue-600",
+                title: 'Quality Guaranteed',
+                desc: 'Professional grade equipment ensuring crisp, clear prints every time',
+                iconColor: 'bg-blue-100',
+                iconText: 'text-blue-600',
               },
               {
-                title: "Fast Delivery",
-                desc: "Quick turnaround times to meet your urgent deadlines",
-                iconColor: "bg-green-100",
-                iconText: "text-green-600",
+                title: 'Fast Delivery',
+                desc: 'Quick turnaround times to meet your urgent deadlines',
+                iconColor: 'bg-green-100',
+                iconText: 'text-green-600',
               },
               {
-                title: "Student Friendly",
-                desc: "Affordable pricing designed with student budgets in mind",
-                iconColor: "bg-purple-100",
-                iconText: "text-purple-600",
+                title: 'Student Friendly',
+                desc: 'Affordable pricing designed with student budgets in mind',
+                iconColor: 'bg-purple-100',
+                iconText: 'text-purple-600',
               },
             ].map((item, i) => (
               <div className="text-center" key={i}>
@@ -673,7 +953,7 @@ const PrintingServiceHomepage = () => {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <UserIcon className="w-4 h-4" />
-              <span>Hi Sandy</span>
+              <span>{user ? `Hi ${user.firstName}` : 'Kindly Login'}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
@@ -684,22 +964,21 @@ const PrintingServiceHomepage = () => {
           </div>
           <div className="hidden md:flex gap-4">
             <button
-              onClick={handleSignInClick}
+              onClick={() => {
+                handleMyAccountClick();
+              }}
               className="hover:text-blue-300 transition"
             >
               My Account
             </button>
             <button
-              onClick={() => alert("My Orders clicked!")}
+              onClick={() => {
+                fetchOrders();
+                setMyOrdersModalOpen(true);
+              }}
               className="hover:text-blue-300 transition"
             >
               My Orders
-            </button>
-            <button
-              onClick={() => alert("Signing out...")}
-              className="hover:text-blue-300 transition"
-            >
-              Sign Out
             </button>
           </div>
         </div>
@@ -748,29 +1027,48 @@ const PrintingServiceHomepage = () => {
               )}
             </button>
             <button
-              onClick={() => alert("Notifications feature coming soon!")}
+              onClick={() => {
+                alert('Notifications feature coming soon!');
+                console.log(authToken);
+              }}
               className="relative group"
             >
               <BellIcon className="w-5 h-5 hover:text-blue-300" />
             </button>
             <div className="flex items-center gap-3 ml-6">
-              <button
-                onClick={handleSignInClick}
-                className="font-semibold hover:text-blue-300"
-              >
-                SIGN IN
-              </button>
-              <span className="text-blue-400">|</span>
-              <button
-                onClick={handleRegisterClick}
-                className="font-semibold text-blue-300 hover:text-blue-400"
-              >
-                REGISTER
-              </button>
+              {(!user && (
+                <>
+                  <button
+                    onClick={handleSignInClick}
+                    className="font-semibold hover:text-blue-300"
+                  >
+                    SIGN IN
+                  </button>
+                  <span className="text-blue-400">|</span>
+                  <button
+                    onClick={handleRegisterClick}
+                    className="font-semibold text-blue-300 hover:text-blue-400"
+                  >
+                    REGISTER
+                  </button>
+                </>
+              )) || (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                    setAuthToken(null);
+                  }}
+                  className="font-semibold text-blue-300 hover:text-blue-400"
+                >
+                  Sign Out
+                </button>
+              )}
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-md transition-all">
-              <AdminSignInButton/>
-            </button>
+            <div className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-md transition-all">
+              <AdminSignInButton />
+            </div>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -850,7 +1148,7 @@ const PrintingServiceHomepage = () => {
           <h1 className="text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
             Your Campus
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}
+              {' '}
               Printing Hub
             </span>
           </h1>
@@ -867,7 +1165,7 @@ const PrintingServiceHomepage = () => {
               Explore Services
             </button>
             <button
-              onClick={() => alert("Quick order feature coming soon!")}
+              onClick={() => alert('Quick order feature coming soon!')}
               className="bg-white hover:bg-gray-50 tex font-semibold py-4 px-8 rounded-xl text-lg transition-all border-2 border-gray-200 hover:border-gray-300"
             >
               Quick Order
@@ -876,15 +1174,14 @@ const PrintingServiceHomepage = () => {
         </div>
 
         {/* Service Selection */}
-        {/* Service Selection */}
         <div className="bg-white rounded-3xl shadow-xl p-10 mb-24 border border-gray-100">
           <h2 className="text-4xl font-extrabold text-gray-900 text-center mb-14 tracking-tight">
             Choose Your Service
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {services.map((service, index) => {
-              const IconComponent = service.icon;
+            {services?.map((service, index) => {
+              const IconComponent = iconMap[service.icon] || service.icon;
               const isSelected = selectedService === service.title;
 
               return (
@@ -893,8 +1190,8 @@ const PrintingServiceHomepage = () => {
                   onClick={() => handleServiceSelect(service)}
                   className={`relative group rounded-3xl transition-all duration-300 cursor-pointer transform ${
                     isSelected
-                      ? "ring-4 ring-blue-500 shadow-blue-300 shadow-2xl scale-105"
-                      : "hover:shadow-xl hover:scale-105"
+                      ? 'ring-4 ring-blue-500 shadow-blue-300 shadow-2xl scale-105'
+                      : 'hover:shadow-xl hover:scale-105'
                   }`}
                 >
                   <div
@@ -938,7 +1235,75 @@ const PrintingServiceHomepage = () => {
             })}
           </div>
         </div>
+        {/* Settings Selection */}
+        {selectedService && (
+          <div className="bg-white rounded-3xl shadow-xl p-8 mb-16">
+            {/* Copies */}
+            <div className="flex items-center  gap-2">
+              <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                Copies
+              </h4>
+              <button
+                onClick={() => handleChangeCopies(copies - 1)}
+                className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-semibold shadow-md transition duration-200"
+                aria-label="Increase copies"
+              >
+                -
+              </button>
 
+              <span className="font-medium px-2 text-blue-600">{copies}</span>
+              <button
+                onClick={() => handleChangeCopies(copies + 1)}
+                className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-semibold shadow-md transition duration-200"
+                aria-label="Increase copies"
+              >
+                +
+              </button>
+            </div>
+            {/* Color */}
+            <div>
+              <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                Select Color
+              </h4>
+              <select
+                value={color ? 'Color' : 'Black&White'}
+                onChange={(e) => handleSelectedColor(e.target.value)}
+                className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 text-gray-700"
+              >
+                <option value="Black&White">Black & White</option>
+                <option value="Color">Color</option>
+              </select>
+            </div>
+            {/* Paper Size */}
+            <div>
+              <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                Paper Size
+              </h4>
+              <select
+                value={paperSize}
+                onChange={(e) => handleSelectedPaper(e.target.value)}
+                className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 text-gray-700"
+              >
+                <option value="A4">A4</option>
+                <option value="legal">Legal</option>
+              </select>
+            </div>
+            {/* Orientation */}
+            <div>
+              <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                Orientation
+              </h4>
+              <select
+                value={orientation}
+                onChange={(e) => handleSelectedOrientation(e.target.value)}
+                className="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 text-gray-700"
+              >
+                <option value="Portrait">Portrait</option>
+                <option value="Landscape">Landscape</option>
+              </select>
+            </div>
+          </div>
+        )}
         {/* File Upload Section */}
         {selectedService && (
           <div className="bg-white rounded-3xl shadow-xl p-8 mb-16">
@@ -948,8 +1313,8 @@ const PrintingServiceHomepage = () => {
             <div
               className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
                 isDragOver
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -1092,13 +1457,26 @@ const PrintingServiceHomepage = () => {
     if (newCopies < 1) return;
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === itemId ? { ...item, copies: newCopies } : item
-      )
+        item.id === itemId ? { ...item, copies: newCopies } : item,
+      ),
     );
   };
 
-  const removeFromCart = (itemId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== itemId));
+  const removeFromCart = async (itemId) => {
+    // setCartItems((prev) => prev.filter((item) => item.id !== itemId));
+    const response = await fetch(sendUrl + '/api/basket/deleteItem/' + itemId, {
+      method: 'DELETE',
+      headers: {
+        Authorization: authToken,
+      },
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert('Item Removed from Cart');
+      handleBasketClick();
+    } else {
+      alert(result.message);
+    }
   };
 
   const updateOrderCopies = (orderId, newCopies) => {
@@ -1111,21 +1489,21 @@ const PrintingServiceHomepage = () => {
               copies: newCopies,
               totalAmount: order.pages * order.pricePerPage * newCopies,
             }
-          : order
-      )
+          : order,
+      ),
     );
   };
 
   const updateOrderStatus = (orderId, newStatus) => {
     setOrders((prev) =>
       prev.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
+        order.id === orderId ? { ...order, status: newStatus } : order,
+      ),
     );
   };
 
   const viewPDF = (pdfUrl) => {
-    window.open(pdfUrl, "_blank");
+    window.open(pdfUrl, '_blank');
   };
 
   const printOrder = (orderId) => {
@@ -1135,40 +1513,8 @@ const PrintingServiceHomepage = () => {
   };
 
   const deleteOrder = (orderId) => {
-    if (confirm("Are you sure you want to delete this order?")) {
+    if (confirm('Are you sure you want to delete this order?')) {
       setOrders((prev) => prev.filter((order) => order.id !== orderId));
-    }
-  };
-
-  const handleCheckout = () => {
-    // Collect customer details
-    const customerName = prompt("Enter your name:");
-    const customerEmail = prompt("Enter your email:");
-    const customerPhone = prompt("Enter your phone number:");
-
-    if (customerName && customerEmail && customerPhone) {
-      // Add items to orders
-      cartItems.forEach((item) => {
-        const newOrder = {
-          id: Date.now() + Math.random(),
-          customerName,
-          email: customerEmail,
-          phone: customerPhone,
-          service: item.service,
-          fileName: item.fileName,
-          pages: item.pages,
-          copies: item.copies || 1,
-          totalAmount: item.total * (item.copies || 1),
-          status: "pending",
-          uploadTime: new Date().toISOString(),
-          pdfUrl: "/uploads/" + item.fileName, // Store actual PDF path
-        };
-        setOrders((prev) => [...prev, newOrder]);
-      });
-
-      setCartItems([]);
-      setBasketModalOpen(false);
-      alert("Order placed successfully!");
     }
   };
 
@@ -1205,11 +1551,27 @@ const PrintingServiceHomepage = () => {
                   </h4>
                   <p className="text-sm text-gray-600">{item.fileName}</p>
                   <p className="text-sm text-gray-500">
-                    {item.pages} pages × ₹{item.pricePerPage}
+                    {item.pages} pages × ₹{item.totalAmount / item.pages} &nbsp;
+                    , {item.colorMode}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {item.copies} copy(s) &nbsp; , paper size : {item.paperSize}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    orientation : {item.orientation}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    uploaded at : {item.uploadTime}
                   </p>
                 </div>
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => window.open(item.pdfUrl)}
+                  className="text-blue-600 hover:text-green-700 text-sm font-medium"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => removeFromCart(item._id)}
                   className="text-red-600 hover:text-red-700 text-sm font-medium"
                 >
                   Remove
@@ -1217,7 +1579,7 @@ const PrintingServiceHomepage = () => {
               </div>
 
               {/* Copies Control */}
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-700">
                     Copies:
@@ -1226,11 +1588,11 @@ const PrintingServiceHomepage = () => {
                     onClick={() =>
                       updateCartItemCopies(item.id, (item.copies || 1) - 1)
                     }
-                    className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full text-sm font-bold flex items-center justify-center"
+                    className="w-8 h-8 bg-gray-200 hover:bg-gray-900 rounded-full text-sm font-bold flex items-center justify-center"
                   >
                     -
                   </button>
-                  <span className="font-medium px-3 py-1 bg-white rounded border min-w-[50px] text-center">
+                  <span className="font-medium px-3 py-1 bg-white text-gray-900 rounded border min-w-[50px] text-center">
                     {item.copies || 1}
                   </span>
                   <button
@@ -1248,10 +1610,10 @@ const PrintingServiceHomepage = () => {
                     ₹{formatPrice(item.total * (item.copies || 1))}
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Print Options */}
-              <div className="mt-4 p-3 bg-white rounded-lg">
+              {/* <div className="mt-4 p-3 bg-white rounded-lg">
                 <h5 className="text-sm font-medium text-gray-700 mb-2">
                   Print Options:
                 </h5>
@@ -1271,6 +1633,7 @@ const PrintingServiceHomepage = () => {
                   </select>
                 </div>
               </div>
+               */}
             </div>
           ))}
 
@@ -1280,10 +1643,7 @@ const PrintingServiceHomepage = () => {
               <span className="text-2xl font-bold text-blue-600">
                 ₹
                 {formatPrice(
-                  cartItems.reduce(
-                    (sum, item) => sum + item.total * (item.copies || 1),
-                    0
-                  )
+                  cartItems.reduce((sum, item) => sum + item.totalAmount, 0),
                 )}
               </span>
             </div>
@@ -1306,14 +1666,48 @@ const PrintingServiceHomepage = () => {
       onClose={() => setSignInModalOpen(false)}
       title="Sign In"
     >
-      <form className="space-y-6">
+      <form
+        className="space-y-6"
+        ref={formRef}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const data = new FormData(formRef.current);
+          const userData = {
+            email: data.get('email'),
+            password: data.get('password'),
+          };
+          const response = await fetch(sendUrl + '/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            localStorage.setItem('authToken', result.Token);
+            localStorage.setItem('user', JSON.stringify(result.user)); // ✅ store user as JSON
+
+            setUser(result.user);
+            setAuthToken(result.Token);
+
+            alert('Logged In Successfully!!');
+            setSignInModalOpen(false);
+          } else {
+            alert(result.message);
+          }
+        }}
+      >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Email
           </label>
           <input
             type="email"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            name="email"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your email"
           />
         </div>
@@ -1323,7 +1717,9 @@ const PrintingServiceHomepage = () => {
           </label>
           <input
             type="password"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            name="password"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your password"
           />
         </div>
@@ -1349,7 +1745,7 @@ const PrintingServiceHomepage = () => {
           Sign In
         </button>
         <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+          Don't have an account?{' '}
           <button
             type="button"
             onClick={() => {
@@ -1367,18 +1763,23 @@ const PrintingServiceHomepage = () => {
   const AdminSignInButton = () => (
     <button
       onClick={() => {
-        const password = prompt("Enter admin password:");
-        if (password === "admin123") {
-          // Replace with actual authentication
+        if (user && user.role == 'admin') {
           setIsAdmin(true);
           setAdminDashboardOpen(true);
         } else {
-          alert("Invalid password!");
+          alert('Access Denied');
         }
+        // if (password === 'admin123') {
+        //   // Replace with actual authentication
+        //   setIsAdmin(true);
+        //   setAdminDashboardOpen(true);
+        // } else {
+        //   alert('Invalid password!');
+        // }
       }}
       className="font-semibold hover:text-blue-300"
     >
-      {isAdmin ? "ADMIN PANEL" : "ADMIN LOGIN"}
+      {isAdmin ? 'ADMIN PANEL' : 'ADMIN LOGIN'}
     </button>
   );
 
@@ -1389,7 +1790,37 @@ const PrintingServiceHomepage = () => {
       onClose={() => setRegisterModalOpen(false)}
       title="Register"
     >
-      <form className="space-y-6">
+      <form
+        ref={formRef}
+        className="space-y-6"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const data = new FormData(formRef.current);
+          const userData = {
+            firstName: data.get('firstName'),
+            lastName: data.get('lastName'),
+            email: data.get('email'),
+            password1: data.get('password1'),
+            password2: data.get('password2'),
+            mobile: data.get('mobile'),
+          };
+          const response = await fetch(sendUrl + '/api/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            alert('User Created Successfully !!, Kindly Login');
+            setRegisterModalOpen(false);
+          } else {
+            alert(result.message);
+          }
+        }}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1397,8 +1828,10 @@ const PrintingServiceHomepage = () => {
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
               placeholder="First name"
+              name="firstName"
             />
           </div>
           <div>
@@ -1407,8 +1840,9 @@ const PrintingServiceHomepage = () => {
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
               placeholder="Last name"
+              name="lastName"
             />
           </div>
         </div>
@@ -1418,11 +1852,25 @@ const PrintingServiceHomepage = () => {
           </label>
           <input
             type="email"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
             placeholder="Enter your email"
+            name="email"
           />
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Mobile Number
+          </label>
+          <input
+            type="text"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+            placeholder="Enter your Mobile Number"
+            name="mobile"
+          />
+        </div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Student ID
           </label>
@@ -1430,16 +1878,19 @@ const PrintingServiceHomepage = () => {
             type="text"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your student ID"
+            name='roll'
           />
-        </div>
+        </div> */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
           <input
             type="password"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
             placeholder="Create a password"
+            name="password1"
           />
         </div>
         <div>
@@ -1448,17 +1899,20 @@ const PrintingServiceHomepage = () => {
           </label>
           <input
             type="password"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
             placeholder="Confirm your password"
+            name="password2"
           />
         </div>
         <div className="flex items-center">
           <input
             type="checkbox"
+            required
             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <span className="ml-2 text-sm text-gray-600">
-            I agree to the{" "}
+            I agree to the{' '}
             <button type="button" className="text-blue-600 hover:text-blue-500">
               Terms and Conditions
             </button>
@@ -1471,7 +1925,7 @@ const PrintingServiceHomepage = () => {
           Create Account
         </button>
         <p className="text-center text-sm text-gray-600">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <button
             type="button"
             onClick={() => {
@@ -1487,9 +1941,175 @@ const PrintingServiceHomepage = () => {
     </Modal>
   );
 
+  const MyOrdersModal = () => (
+    <Modal
+      isOpen={myOrdersModalOpen}
+      onClose={() => setMyOrdersModalOpen(false)}
+    >
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer Details
+                </th> */}
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Order Info
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Print Settings
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Timeline
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {myOrders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {order.service}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {/* <FileText className="w-3 h-3 text-gray-400" /> */}
+                        <p
+                          className="text-sm text-gray-500 truncate max-w-32"
+                          title={order.fileName}
+                        >
+                          {order.fileName.length > 20
+                            ? order.fileName.substring(0, 20) + '...'
+                            : order.fileName}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {new Date(order.uploadTime).toLocaleString()}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500">
+                        Pages:{' '}
+                        <span className="font-medium">{order.pages}</span>
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Copies:</span>
+                        <span className="font-medium px-2 text-pink-600">
+                          {order.copies}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>
+                          {order.colorMode} • {order.paperSize}
+                        </p>
+                        <p>{order.orientation}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-blue-600">
+                        ₹{order.totalAmount}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="space-y-2">
+                      <span className="font-medium px-2 text-pink-600">
+                        {order.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        {/* <Clock className="w-3 h-3" /> */}
+                        <span>Est: {order.estimatedTime}</span>
+                      </div>
+                      {order.completedTime && (
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          {/* <Calendar className="w-3 h-3" /> */}
+                          <span>
+                            Done:{' '}
+                            {new Date(order.completedTime).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => viewPDF(order.pdfUrl)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1"
+                          title="View PDF"
+                        >
+                          {/* <Eye className="w-3 h-3" /> */}
+                          View
+                        </button>
+                      </div>
+                      {order.notes && (
+                        <div className="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                          <p className="font-medium text-yellow-800">Note:</p>
+                          <p className="text-yellow-700">{order.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {myOrders.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No orders found.</p>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+
+  const MyAccountModal = () => (
+    <Modal
+      isOpen={myAccountModalOpen}
+      onClose={() => {
+        setMyAccountModalOpen(false);
+      }}
+    >
+      {user ? (
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="overflow-x-auto">
+            <h4 className="text-gray-900">
+              First Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;: {user.firstName}
+            </h4>
+            <h4 className="text-gray-900">
+              Last Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;: {user.lastName}
+            </h4>
+            <h4 className="text-gray-900">
+              Email-Id &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;:{' '}
+              {user.email}
+            </h4>
+            <h4 className="text-gray-900">Mobile Number : {user.mobile}</h4>
+          </div>
+        </div>
+      ) : (
+        <div className="text-gray-600 p-4">
+          Please log in to view account details.
+        </div>
+      )}
+    </Modal>
+  );
   return (
     <div className="min-h-screen">
-      {currentPage === "home" ? <HomePage /> : <ServicesPage />}
+      {currentPage === 'home' ? <HomePage /> : <ServicesPage />}
 
       {/* Modals */}
       <BillModal
@@ -1500,15 +2120,17 @@ const PrintingServiceHomepage = () => {
         billAmount={billAmount}
         onAddToBasket={handleAddToBasket}
         onBuyNow={handleBuyNow}
-        fileName={pdfFile?.name || ""}
+        fileName={pdfFile?.name || ''}
       />
       <BasketModal />
       <SignInModal />
       <RegisterModal />
-
-    {/* Admin Dashboard */}
-    {isAdmin && <AdminDashboard />}
-  </div>
-)}
+      <MyOrdersModal />
+      <MyAccountModal />
+      {/* Admin Dashboard */}
+      {isAdmin && <AdminDashboard />}
+    </div>
+  );
+};
 
 export default PrintingServiceHomepage;
