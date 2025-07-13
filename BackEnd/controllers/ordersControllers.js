@@ -27,6 +27,7 @@ const createOrderByUploadingPdf = async (req, res) => {
     const paperSize = req.body.paperSize;
     const orientation = req.body.orientation;
     const copies = req.body.copies;
+    const side = req.body.side;
 
     fs.unlinkSync(req.file.path);
     const newOrder = await orders.create({
@@ -43,6 +44,7 @@ const createOrderByUploadingPdf = async (req, res) => {
       paperSize: paperSize,
       orientation: orientation,
       priority: 'normal',
+      side: side,
       notes: '',
       estimatedTime: '30 minutes',
     });

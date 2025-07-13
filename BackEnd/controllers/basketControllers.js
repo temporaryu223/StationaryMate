@@ -29,6 +29,7 @@ const addToBasket = async (req, res) => {
       colorMode: req.body.color === 'true' ? 'color' : 'black-white',
       paperSize: req.body.paperSize,
       orientation: req.body.orientation,
+      side: req.body.side,
       notes: '',
     });
     fs.unlinkSync(req.file.path);
@@ -117,6 +118,7 @@ const checkOut = async (req, res) => {
         colorMode: item.colorMode,
         paperSize: item.paperSize,
         orientation: item.orientation,
+        side: item.side,
         notes: '',
         estimatedTime: '30 minutes',
       });

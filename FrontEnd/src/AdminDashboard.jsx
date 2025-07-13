@@ -661,6 +661,7 @@ const EnhancedAdminDashboard = () => {
                             {order.colorMode} • {order.paperSize}
                           </p>
                           <p>{order.orientation}</p>
+                          <p>{order.side}</p>
                         </div>
                         <p className="text-sm font-semibold text-blue-600">
                           ₹{order.totalAmount}

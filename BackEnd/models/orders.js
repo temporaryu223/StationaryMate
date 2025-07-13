@@ -33,6 +33,7 @@ const ordersSchema = mongoose.Schema({
   },
   pdfUrl: String,
   colorMode: String,
+  side: String,
   paperSize: String,
   orientation: String,
   priority: String,

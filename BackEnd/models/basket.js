@@ -13,6 +13,7 @@ const basketSchema = mongoose.Schema({
     default: Date.now(),
   },
   pages: Number,
+  side: String,
   copies: Number,
   totalAmount: Number,
   pdfUrl: String,

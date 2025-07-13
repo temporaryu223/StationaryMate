@@ -9,7 +9,12 @@ const uploadMiddleware = require('../middleware/uploadMiddleware');
 const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
 
-router.post('/create', uploadMiddleware.single('pdf'), addToBasket);
+router.post(
+  '/create',
+  authMiddleware,
+  uploadMiddleware.single('pdf'),
+  addToBasket,
+);
 router.get('/getAll/:email', authMiddleware, getAllItemsByMail);
 router.delete('/deleteItem/:id', authMiddleware, deleteItemById);
 router.post('/checkout/:email', checkOut);
