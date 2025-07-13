@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Archive,
 } from 'lucide-react';
-const sendUrl = 'http://localhost:3000';
+const sendUrl = 'https://stationarymate-backend.onrender.com';
 const EnhancedAdminDashboard = () => {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
