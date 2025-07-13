@@ -2147,7 +2147,8 @@ import nitaplogo from './assets/img/logo.png';
 import AdminDashboard from './AdminDashboard';
 // import { keys } from '../../BackEnd/controllers/ordersControllers';
 const colorCost = 5;
-const sendUrl = 'https://stationarymate-backend.onrender.com';
+// const sendUrl = 'https://stationarymate-backend.onrender.com';
+const sendUrl = 'http://localhost:3000';
 const SearchIcon = () => (
   <svg
     className="w-5 h-5"
@@ -2779,6 +2780,9 @@ const PrintingServiceHomepage = () => {
     const response = await fetch(sendUrl + '/api/basket/create', {
       method: 'POST',
       body: formData,
+      headers: {
+        Authorization: authToken,
+      },
     });
     const result = await response.json();
     if (result.success) {
