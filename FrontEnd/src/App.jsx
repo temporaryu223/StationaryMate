@@ -4270,6 +4270,7 @@ const PrintingServiceHomepage = () => {
             password1: data.get('password1'),
             password2: data.get('password2'),
             mobile: data.get('mobile'),
+            otp: data.get('otp'),
           };
           const response = await fetch(sendUrl + '/api/auth/register', {
             method: 'POST',
@@ -4288,6 +4289,36 @@ const PrintingServiceHomepage = () => {
           }
         }}
       >
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            required
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl"
+            placeholder="Enter Your Email"
+            name="email"
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              const data = new FormData(formRef.current);
+              const email = data.get('email');
+              localStorage.setItem('tempEmail', email);
+
+              if (!email) return alert('Please enter an email first');
+
+              const res = await fetch(sendUrl + '/api/auth/otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+              });
+              const result = await res.json();
+              alert(result.message);
+            }}
+            className="text-sm bg-blue-500 text-white px-3 py-2 rounded-lg"
+          >
+            Send OTP
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -4313,18 +4344,7 @@ const PrintingServiceHomepage = () => {
             />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address
-          </label>
-          <input
-            type="email"
-            required
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 transition-all duration-200 bg-gray-50 focus:bg-white"
-            placeholder="Enter your email"
-            name="email"
-          />
-        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Mobile Number
@@ -4359,6 +4379,18 @@ const PrintingServiceHomepage = () => {
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 transition-all duration-200 bg-gray-50 focus:bg-white"
             placeholder="Confirm your password"
             name="password2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            OTP
+          </label>
+          <input
+            type="text"
+            required
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 transition-all duration-200 bg-gray-50 focus:bg-white"
+            placeholder="Enter OTP"
+            name="otp"
           />
         </div>
         <div className="flex items-start">
@@ -4442,6 +4474,7 @@ const PrintingServiceHomepage = () => {
                         <h4 className="font-bold text-lg text-gray-900">
                           {order.service}
                         </h4>
+                        <p className="text-sm text-gray-500">{order._id}</p>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
                             order.status === 'completed'

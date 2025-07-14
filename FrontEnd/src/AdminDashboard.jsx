@@ -14,6 +14,7 @@ import {
   Archive,
 } from 'lucide-react';
 const sendUrl = 'https://stationarymate-backend.onrender.com';
+// const sendUrl = 'http://localhost:3000';
 const EnhancedAdminDashboard = () => {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -619,6 +620,7 @@ const EnhancedAdminDashboard = () => {
                             {order.customername}
                           </p>
                         </div>
+                        <p className="text-sm text-blue-500">{order._id}</p>
                         <p className="text-sm text-gray-500">{order.email}</p>
                         <p className="text-sm text-gray-500">{order.phone}</p>
                       </div>

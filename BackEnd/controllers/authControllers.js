@@ -1,6 +1,8 @@
 const User = require('../models/users');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const otpStore = {};
 
 const register = async (req, res) => {
   try {
@@ -20,6 +22,15 @@ const register = async (req, res) => {
         message: "Both Passwords doesn't match",
       });
       return;
+    }
+    if (
+      otpStore[userDetails.email].expiresAt < Date.now ||
+      otpStore[userDetails.email].otp != userDetails.otp
+    ) {
+      return res.status(500).json({
+        success: false,
+        message: 'OTP Expired or OTP donot match ...',
+      });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -107,4 +118,44 @@ const login = async (req, res) => {
     });
   }
 };
-module.exports = { register, login };
+
+const otp = async (req, res) => {
+  try {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_HOST_USER,
+        pass: process.env.EMAIL_HOST_PASSWORD,
+      },
+    });
+    const { email } = req.body;
+    if (!email)
+      res.status(500).json({ success: false, message: 'Email is Required' });
+    otpStore[email] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+    await transporter.sendMail({
+      from: process.env.EMAIL_HOST_USER,
+      to: email,
+      subject: 'OTP for StationaryMate',
+      text: `Dear User,
+        Your OTP for the StationaryMate is ${otp}. it will expires in 10 minutes.
+
+Thank You
+        
+warm regards,
+StationaryMate team.`,
+    });
+    console.log(otpStore);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP Sent Successfully!!',
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: 'Unable to send the OTP, Try again later...' + e,
+    });
+  }
+};
+module.exports = { register, login, otp };

@@ -5,6 +5,8 @@ const Orders = require('../models/orders');
 const { uploadToSupabase } = require('../helpers/supabaseHelper');
 const { createClient } = require('@supabase/supabase-js');
 const { razorpay } = require('razorpay');
+const nodemailer = require('nodemailer');
+const { log } = require('console');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -18,7 +20,13 @@ const createOrderByUploadingPdf = async (req, res) => {
         .json({ success: false, message: 'No file uploaded' });
     }
     const { url, publicId } = await uploadToSupabase(req.file);
-
+    const transporter = await nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_HOST_USER,
+        pass: process.env.EMAIL_HOST_PASSWORD,
+      },
+    });
     const user = JSON.parse(req.body.user);
     const amount = req.body.amount;
     const pages = req.body.pages;
@@ -49,6 +57,23 @@ const createOrderByUploadingPdf = async (req, res) => {
       estimatedTime: '30 minutes',
     });
 
+    await transporter.sendMail({
+      to: user.email,
+      from: process.env.EMAIL_HOST_USER,
+      subject: 'Order Placed Successfully !!',
+      text: `Dear User,
+        You order has been placed successfully, please find the order details below.
+Order Id     :${newOrder._id}
+Customer Name:${newOrder.customername}
+Service      :${newOrder.service}
+
+You order will be Completed in ${newOrder.estimatedTime}, and will be notified once it is finished.
+
+Thank you.
+
+warm regards,
+StationaryMate Team.`,
+    });
     res
       .status(200)
       .json({ success: true, message: 'Order Created', data: newOrder });
@@ -123,6 +148,31 @@ const updateOrderById = async (req, res) => {
   const id = req.params.id;
   try {
     const data = req.body;
+    const order = await Orders.findById(id);
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_HOST_USER,
+        pass: process.env.EMAIL_HOST_PASSWORD,
+      },
+    });
+    console.log(data.status);
+
+    if (data.status == 'completed' || data.status == 'cancelled') {
+      console.log('hi');
+
+      await transporter.sendMail({
+        to: order.email,
+        from: process.env.EMAIL_HOST_USER,
+        subject: 'Order Update Status',
+        text: `Dear User,
+          Your Order with Id ${id}, has been ${data.status}.Please kindly visit Stationary for more Details.
+Thank You.
+
+warm regards,
+StationaryMate Team.`,
+      });
+    }
     const response = await Orders.findByIdAndUpdate(id, data, { new: true });
     res.status(200).json({
       success: true,
@@ -130,7 +180,7 @@ const updateOrderById = async (req, res) => {
       data: data,
     });
   } catch (e) {
-    console.log(`Unable to update the order with Id ${id}`);
+    console.log(`Unable to update the order with Id ${id}` + e);
     res.status(500).json({
       success: false,
       message: `Unable to update the order with Id ${id}`,
