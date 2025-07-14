@@ -4475,21 +4475,20 @@ const PrintingServiceHomepage = () => {
                           {order.service}
                         </h4>
                         <p className="text-sm text-gray-500">{order._id}</p>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            order.status === 'completed'
-                              ? 'bg-green-100 text-green-800'
-                              : order.status === 'processing'
-                              ? 'bg-blue-100 text-blue-800'
-                              : order.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {order.status}
-                        </span>
                       </div>
-
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          order.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : order.status === 'processing'
+                            ? 'bg-blue-100 text-blue-800'
+                            : order.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {order.status}
+                      </span>
                       <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
                         📄{' '}
                         <span className="truncate">
