@@ -10,6 +10,7 @@ const pdfUploadRouter = require('./routes/pdfUploadRoutes');
 const basketRouter = require('./routes/basketRoutes');
 const authRouter = require('./routes/authRoutes');
 const raazorpayRouter = require('./routes/razorpayRoutes');
+const shopOpenRouter = require('./routes/shopOpenRoutes');
 
 app.use(express.json());
 app.use(cors());
@@ -20,6 +21,7 @@ app.use('/api/pdfs/', pdfUploadRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/basket', basketRouter);
 app.use('/api/razorpay', raazorpayRouter);
+app.use('/api/shop', shopOpenRouter);
 
 app.post('/', (req, res) => {
   console.log('we got a response');

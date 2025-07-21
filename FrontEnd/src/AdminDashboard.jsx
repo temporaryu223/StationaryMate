@@ -15,8 +15,7 @@ import {
 } from 'lucide-react';
 const sendUrl = 'https://stationarymate-backend.onrender.com';
 // const sendUrl = 'http://localhost:3000';
-const EnhancedAdminDashboard = () => {
-  const [adminDashboardOpen, setAdminDashboardOpen] = useState(true);
+const EnhancedAdminDashboard = ({ isOpen = true, onClose = () => {} }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -387,8 +386,8 @@ const EnhancedAdminDashboard = () => {
 
   return (
     <Modal
-      isOpen={adminDashboardOpen}
-      onClose={() => setAdminDashboardOpen(false)}
+      isOpen={isOpen}
+      onClose={onClose}
       title="Print Service Admin Dashboard"
       size="max-w-7xl"
     >
