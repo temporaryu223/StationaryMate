@@ -7,6 +7,8 @@ const otpStore = {};
 const register = async (req, res) => {
   try {
     const userDetails = req.body;
+    console.log(userDetails);
+
     const checkExistingUser = await User.findOne({ email: userDetails.email });
 
     if (checkExistingUser) {
@@ -16,13 +18,13 @@ const register = async (req, res) => {
       });
       return;
     }
-    if (userDetails.password1 != userDetails.password2) {
-      res.status(500).json({
-        success: false,
-        message: "Both Passwords doesn't match",
-      });
-      return;
-    }
+    // if (userDetails.password1 != userDetails.password2) {
+    //   res.status(500).json({
+    //     success: false,
+    //     message: "Both Passwords doesn't match",
+    //   });
+    //   return;
+    // }
     if (
       otpStore[userDetails.email].expiresAt < Date.now ||
       otpStore[userDetails.email].otp != userDetails.otp
@@ -37,26 +39,51 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(userDetails.password1, salt);
     console.log(userDetails);
 
-    const newUser = new User({
-      firstName: userDetails.firstName,
-      lastName: userDetails.lastName,
-      email: userDetails.email,
-      password: hashedPassword,
-      mobile: userDetails.mobile,
-    });
-
-    await newUser.save();
-
-    if (newUser) {
-      res.status(200).json({
-        success: true,
-        message: 'User Created Successfully!!',
+    if (userDetails.year) {
+      const newUser1 = new User({
+        firstName: userDetails.name,
+        email: userDetails.email,
+        password: hashedPassword,
+        rollNumber: userDetails.rollNumber,
+        gender: userDetails.gender,
+        branch: userDetails.branch,
+        year: userDetails.year,
+        mobile: userDetails.mobile,
       });
+      await newUser1.save();
+      if (newUser1) {
+        res.status(200).json({
+          success: true,
+          message: 'User Created Successfully!!',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Unable to register User Try Again later...',
+        });
+      }
     } else {
-      res.status(500).json({
-        success: false,
-        message: 'Unable to register User Try Again later...',
+      const newUser = new User({
+        firstName: userDetails.firstName,
+        lastName: userDetails.lastName,
+        email: userDetails.email,
+        password: hashedPassword,
+        mobile: userDetails.mobile,
       });
+
+      await newUser.save();
+
+      if (newUser) {
+        res.status(200).json({
+          success: true,
+          message: 'User Created Successfully!!',
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Unable to register User Try Again later...',
+        });
+      }
     }
   } catch (e) {
     console.log(e);
